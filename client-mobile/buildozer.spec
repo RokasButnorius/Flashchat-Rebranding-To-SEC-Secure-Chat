@@ -1,25 +1,31 @@
 [app]
-title = FlashChat
-package.name = flashchat
-package.domain = store.flashchat
+title = SEC
+package.name = securechat
+package.domain = store.sec
 
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
-icon.filename = %(source.dir)s/flashchaticon.png
+icon.filename = %(source.dir)s/secicon.png
 
-version = 0.1
+version = 0.3
 
-# Kept deliberately minimal for this first build: no aiortc/opencv
-# (calling isn't ported yet), just what text messaging needs.
+# Text messaging only for this build. Add aiortc/webrtc deps when
+# calling is actually ported to the mobile client.
 requirements = python3,kivy,pynacl,websockets,cffi,pycparser,certifi
 
 orientation = portrait
 fullscreen = 0
 
-# Network access is required for the websocket relay connection
-android.permissions = INTERNET
+# Only what the websocket relay connection needs.
+android.permissions = INTERNET, ACCESS_NETWORK_STATE
 
-android.api = 33
+# --- when you ship calling, uncomment these ---
+# android.permissions = INTERNET, ACCESS_NETWORK_STATE, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, CAMERA
+# android.gradle_dependencies = io.github.webrtc-sdk:android:144.7559.09
+# android.enable_androidx = True
+# ---------------------------------------------
+
+android.api = 34
 android.minapi = 24
 android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
