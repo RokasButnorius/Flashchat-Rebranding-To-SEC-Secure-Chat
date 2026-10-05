@@ -60,6 +60,7 @@ jobs:
             --collect-all "numpy" `
             --collect-all "PIL" `
             --collect-all "certifi" `
+            --collect-all "nacl" `
             --add-data "${{ steps.sd.outputs.sd_data }};_sounddevice_data" `
             --add-data "source;source" `
             --hidden-import "sounddevice" `
