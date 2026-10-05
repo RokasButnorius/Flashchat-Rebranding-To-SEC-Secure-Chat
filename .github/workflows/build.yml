@@ -25,30 +25,38 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller
           pip install -r client-desktop/requirements.txt
+          pip install sounddevice opencv-python numpy pillow
 
       - name: Build Executable with PyInstaller
+        working-directory: client-desktop
         run: |
           pyinstaller `
             --noconfirm `
             --onedir `
             --windowed `
-            --name="FlashChat" `
-            --icon="client-desktop/logo.ico" `
+            --name="SEC" `
+            --icon="logo.ico" `
             --collect-all "qasync" `
-            --collect-all "aiortc" `
-            --collect-all "av" `
             --collect-all "PySide6" `
-            --copy-metadata "aiortc" `
-            --copy-metadata "av" `
-            client-desktop/main_desktop.py
+            --collect-all "sounddevice" `
+            --collect-all "cv2" `
+            --collect-all "numpy" `
+            --collect-all "PIL" `
+            --collect-all "certifi" `
+            --hidden-import "sounddevice" `
+            --hidden-import "cv2" `
+            --hidden-import "numpy" `
+            --add-data "source;source" `
+            --add-data "theme.py;." `
+            main.py
 
       - name: Compress Build Artifact
         run: |
-          powershell Compress-Archive -Path dist/FlashChat/* -DestinationPath dist/FlashChat-Windows-x64.zip
+          powershell Compress-Archive -Path dist/SEC/* -DestinationPath dist/SEC-Windows-x64.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/FlashChat-Windows-x64.zip
+          files: dist/SEC-Windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
