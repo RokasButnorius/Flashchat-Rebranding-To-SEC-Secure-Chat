@@ -1,4 +1,4 @@
-# FlashChat
+# SEC
 
 **End-to-end encrypted messaging and calling**
 
@@ -19,7 +19,7 @@ All builds are on the website: **[flashchatmain.netlify.app](https://flashchatma
 | Platform | Version | Notes |
 |----------|---------|-------|
 | **Android** | v0.2 | Debug APK (arm64-v8a + armeabi-v7a) |
-| **Windows** | v0.1 | x64 build |
+| **Windows** | v0.2 | x64 build |
 | **Web** | WIP | Not E2EE yet |
 
 The debug APK under `client-mobile/bin/` is only a convenience copy for people browsing the source.
@@ -137,7 +137,7 @@ shared/             Wire protocol definitions (no crypto)
 
 ## Support
 
-Even €1 helps development: **[ko-fi.com/flashchat](https://ko-fi.com/flashchat)**
+Even €1 helps development: **[https://ko-fi.com/securechat](https://ko-fi.com/securechat)**
 
 **Contact / bug reports**
 - rokasbutnorius12@gmail.com
@@ -146,5 +146,5 @@ Even €1 helps development: **[ko-fi.com/flashchat](https://ko-fi.com/flashchat
 ---
 
 <p align="center">
-  <b>Flash Chat</b> — made by Rokas Butnorius
+  <b>SEC</b> — made by Rokas Butnorius
 </p>
