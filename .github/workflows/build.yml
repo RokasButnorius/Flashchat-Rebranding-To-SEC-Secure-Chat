@@ -25,7 +25,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller
           pip install -r client-desktop/requirements.txt
-          pip install sounddevice opencv-python numpy pillow
+
+      - name: Locate sounddevice PortAudio data folder
+        id: sd
+        run: |
+          $sdData = python -c "import os, sounddevice; print(os.path.join(os.path.dirname(sounddevice.__file__), '_sounddevice_data'))"
+          Write-Host "sounddevice data folder: $sdData"
+          if (-not (Test-Path $sdData)) {
+            Write-Error "sounddevice _sounddevice_data missing at $sdData"
+            exit 1
+          }
+          Get-ChildItem -Recurse $sdData | Select-Object -First 20
+          "sd_data=$sdData" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Ensure source/ folder exists
+        working-directory: client-desktop
+        run: |
+          if (-not (Test-Path "source")) {
+            New-Item -ItemType Directory -Path "source" -Force | Out-Null
+          }
 
       - name: Build Executable with PyInstaller
         working-directory: client-desktop
@@ -38,17 +56,23 @@ jobs:
             --icon="logo.ico" `
             --collect-all "qasync" `
             --collect-all "PySide6" `
-            --collect-all "sounddevice" `
             --collect-all "cv2" `
             --collect-all "numpy" `
             --collect-all "PIL" `
             --collect-all "certifi" `
-            --hidden-import "sounddevice" `
-            --hidden-import "cv2" `
-            --hidden-import "numpy" `
+            --add-data "${{ steps.sd.outputs.sd_data }};_sounddevice_data" `
             --add-data "source;source" `
-            --add-data "theme.py;." `
+            --hidden-import "sounddevice" `
+            --hidden-import "_cffi_backend" `
+            --hidden-import "cffi" `
             main.py
+
+      - name: Verify bundled natives
+        run: |
+          Write-Host "--- sounddevice data ---"
+          Get-ChildItem -Recurse dist/SEC/_internal/_sounddevice_data -ErrorAction SilentlyContinue
+          Write-Host "--- cv2 native ---"
+          Get-ChildItem -Recurse dist/SEC/_internal/cv2 -Filter *.pyd -ErrorAction SilentlyContinue | Select-Object -First 5
 
       - name: Compress Build Artifact
         run: |
