@@ -1,19 +1,21 @@
-"""client-desktop/theme.py -- FlashChat theme: flat/matte dark UI, red accents, Discord-real greys."""
+"""client-desktop/theme.py -- SEC glass UI, blue accents matched to logo."""
 
-# Matched closer to Discord's actual palette (warm neutral greys, not blue-tinted)
-BG_DEEPEST = "#1e1f22"
-BG_SIDEBAR = "#2b2d31"
-BG_PANEL = "#313338"
-BG_INPUT = "#383a40"
-BG_HOVER = "#3f4147"
-ACCENT = "#e6394a"
-ACCENT_BRIGHT = "#ff4d5e"
-ACCENT_DIM = "#8a2a33"
-ONLINE = "#3ba55d"
-TEXT_MAIN = "#f2f3f5"
-TEXT_MUTED = "#96989d"
-TEXT_DIM = "#6d6f78"
-BORDER = "#1a1b1e"
+BG_DEEPEST = "#0b1220"
+BG_SIDEBAR = "rgba(20, 40, 70, 180)"
+BG_PANEL = "rgba(18, 35, 60, 160)"
+BG_INPUT = "rgba(30, 55, 95, 200)"
+BG_HOVER = "rgba(40, 75, 130, 220)"
+BG_GLASS = "rgba(25, 50, 90, 140)"
+ACCENT = "#1e90ff"
+ACCENT_BRIGHT = "#4fc3ff"
+ACCENT_DIM = "#0d4f8a"
+ACCENT_GLOW = "rgba(30, 144, 255, 80)"
+ONLINE = "#3dd68c"
+TEXT_MAIN = "#e8f1ff"
+TEXT_MUTED = "#8aa4c8"
+TEXT_DIM = "#5a7399"
+BORDER = "rgba(80, 150, 255, 55)"
+BORDER_STRONG = "rgba(100, 180, 255, 120)"
 
 STYLESHEET = f"""
 QWidget {{
@@ -23,51 +25,115 @@ QWidget {{
     font-size: 13px;
     outline: none;
 }}
-QMainWindow {{ background-color: {BG_DEEPEST}; }}
+QMainWindow {{
+    background-color: {BG_DEEPEST};
+}}
 
-#Sidebar {{ background-color: {BG_SIDEBAR}; border-right: 1px solid {BORDER}; }}
-#ChatPanel {{ background-color: {BG_PANEL}; }}
-#ChatHeader {{ background-color: {BG_PANEL}; border-bottom: 1px solid {BORDER}; }}
+#Sidebar {{
+    background-color: rgba(15, 30, 55, 210);
+    border-right: 1px solid {BORDER};
+}}
+#ChatPanel {{
+    background-color: rgba(12, 22, 40, 230);
+}}
+#ChatHeader {{
+    background-color: rgba(18, 35, 65, 200);
+    border-bottom: 1px solid {BORDER};
+}}
 
-/* --- Flat, matte inputs -- explicit borders everywhere to override
-   Fusion's default bevel/gradient shading on native widgets --- */
 QLineEdit, QTextEdit {{
     background-color: {BG_INPUT};
-    border: 1px solid {BG_INPUT};
-    border-radius: 4px;
-    padding: 8px 10px;
+    border: 1px solid {BORDER};
+    border-radius: 10px;
+    padding: 8px 12px;
     color: {TEXT_MAIN};
 }}
-QLineEdit:focus, QTextEdit:focus {{ border: 1px solid {ACCENT}; }}
+QLineEdit:focus, QTextEdit:focus {{
+    border: 1px solid {ACCENT_BRIGHT};
+    background-color: rgba(35, 65, 110, 230);
+}}
 
 QPushButton {{
-    background-color: {BG_INPUT};
-    border: 1px solid {BG_INPUT};
-    border-radius: 4px;
+    background-color: rgba(35, 60, 100, 200);
+    border: 1px solid {BORDER};
+    border-radius: 10px;
     padding: 8px 14px;
     color: {TEXT_MAIN};
 }}
-QPushButton:hover {{ background-color: {BG_HOVER}; border: 1px solid {BG_HOVER}; }}
-QPushButton:pressed {{ background-color: {ACCENT_DIM}; border: 1px solid {ACCENT_DIM}; }}
-QPushButton:disabled {{ background-color: {BG_INPUT}; color: {TEXT_DIM}; }}
+QPushButton:hover {{
+    background-color: {BG_HOVER};
+    border: 1px solid {BORDER_STRONG};
+}}
+QPushButton:pressed {{
+    background-color: {ACCENT_DIM};
+    border: 1px solid {ACCENT};
+}}
+QPushButton:disabled {{
+    background-color: rgba(30, 40, 55, 150);
+    color: {TEXT_DIM};
+}}
 
 QPushButton#AccentButton {{
     background-color: {ACCENT};
-    border: 1px solid {ACCENT};
+    border: 1px solid {ACCENT_BRIGHT};
+    font-weight: 600;
+    color: white;
+}}
+QPushButton#AccentButton:hover {{
+    background-color: {ACCENT_BRIGHT};
+    border: 1px solid #9ee0ff;
+}}
+
+QPushButton#DangerButton {{
+    background-color: rgba(160, 40, 40, 200);
+    border: 1px solid #e05555;
     font-weight: 600;
 }}
-QPushButton#AccentButton:hover {{ background-color: {ACCENT_BRIGHT}; border: 1px solid {ACCENT_BRIGHT}; }}
+QPushButton#DangerButton:hover {{
+    background-color: #dc2626;
+    border: 1px solid #ff7070;
+}}
 
 QPushButton#IconButton {{
-    background-color: {BG_INPUT};
-    border: 1px solid {BG_INPUT};
+    background-color: rgba(35, 60, 100, 180);
+    border: 1px solid {BORDER};
     border-radius: 18px;
     min-width: 36px; max-width: 36px;
     min-height: 36px; max-height: 36px;
-    font-size: 15px;
+    padding: 4px;
 }}
-QPushButton#IconButton:hover {{ background-color: {BG_HOVER}; border: 1px solid {BG_HOVER}; }}
-QPushButton#IconButton:checked {{ background-color: {ACCENT}; border: 1px solid {ACCENT}; }}
+QPushButton#IconButton:hover {{
+    background-color: {BG_HOVER};
+    border: 1px solid {ACCENT};
+}}
+
+QPushButton#ReactionButton {{
+    background-color: rgba(35, 60, 100, 180);
+    border: 1px solid {BORDER};
+    border-radius: 10px;
+    min-width: 40px; max-width: 40px;
+    min-height: 36px; max-height: 36px;
+    padding: 4px;
+}}
+QPushButton#ReactionButton:hover {{
+    background-color: {BG_HOVER};
+    border: 1px solid {ACCENT};
+}}
+
+QPushButton#DevButton {{
+    background-color: transparent;
+    border: 1px solid rgba(80, 150, 255, 40);
+    border-radius: 6px;
+    color: {TEXT_DIM};
+    font-size: 10px;
+    padding: 2px 8px;
+    min-height: 18px;
+    max-height: 22px;
+}}
+QPushButton#DevButton:hover {{
+    color: {ACCENT_BRIGHT};
+    border: 1px solid {BORDER};
+}}
 
 QListWidget {{
     background-color: transparent;
@@ -76,12 +142,17 @@ QListWidget {{
 }}
 QListWidget::item {{
     padding: 8px;
-    border-radius: 4px;
+    border-radius: 8px;
     margin: 1px 4px;
     border: none;
 }}
-QListWidget::item:hover {{ background-color: {BG_HOVER}; }}
-QListWidget::item:selected {{ background-color: {ACCENT}; color: white; }}
+QListWidget::item:hover {{
+    background-color: rgba(40, 75, 130, 160);
+}}
+QListWidget::item:selected {{
+    background-color: {ACCENT};
+    color: white;
+}}
 
 QScrollBar:vertical {{
     background: transparent;
@@ -89,7 +160,7 @@ QScrollBar:vertical {{
     border: none;
 }}
 QScrollBar::handle:vertical {{
-    background: #4a4d54;
+    background: rgba(80, 140, 220, 120);
     border-radius: 4px;
     min-height: 24px;
     border: none;
@@ -106,29 +177,46 @@ QLabel#SectionLabel {{
 }}
 QLabel#PeerName {{ font-size: 15px; font-weight: 700; background: transparent; }}
 QLabel#PeerSub {{ color: {TEXT_MUTED}; font-size: 11px; background: transparent; }}
+QLabel#DevBadge {{
+    background-color: {ACCENT};
+    color: white;
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 700;
+}}
+QLabel#LiveNotice {{
+    background-color: rgba(30, 144, 255, 230);
+    color: white;
+    border-radius: 0px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+}}
 QLabel {{ background: transparent; }}
 
-QDialog {{ background-color: {BG_PANEL}; }}
+QDialog {{
+    background-color: rgba(14, 28, 50, 245);
+    border: 1px solid {BORDER};
+}}
 
-/* --- ComboBox: explicitly flatten every sub-part, this is usually
-   where Fusion's native shading leaks through even with QSS applied --- */
 QComboBox {{
     background-color: {BG_INPUT};
-    border: 1px solid {BG_INPUT};
-    border-radius: 4px;
+    border: 1px solid {BORDER};
+    border-radius: 8px;
     padding: 6px 10px;
 }}
-QComboBox:hover {{ background-color: {BG_HOVER}; border: 1px solid {BG_HOVER}; }}
+QComboBox:hover {{
+    background-color: {BG_HOVER};
+    border: 1px solid {BORDER_STRONG};
+}}
 QComboBox::drop-down {{
     border: none;
     background: transparent;
     width: 24px;
 }}
-QComboBox::down-arrow {{
-    width: 10px; height: 10px;
-}}
 QComboBox QAbstractItemView {{
-    background-color: {BG_INPUT};
+    background-color: rgba(20, 40, 70, 250);
     border: 1px solid {BORDER};
     selection-background-color: {ACCENT};
     outline: none;
@@ -137,23 +225,27 @@ QComboBox QAbstractItemView {{
 QCheckBox {{ background: transparent; spacing: 8px; }}
 QCheckBox::indicator {{
     width: 16px; height: 16px;
-    border-radius: 3px;
+    border-radius: 4px;
     background-color: {BG_INPUT};
-    border: 1px solid #4a4d54;
+    border: 1px solid {BORDER};
 }}
 QCheckBox::indicator:checked {{
     background-color: {ACCENT};
-    border: 1px solid {ACCENT};
+    border: 1px solid {ACCENT_BRIGHT};
 }}
 
-QMessageBox {{ background-color: {BG_PANEL}; }}
-QInputDialog {{ background-color: {BG_PANEL}; }}
+QMessageBox {{ background-color: rgba(14, 28, 50, 250); }}
+QInputDialog {{ background-color: rgba(14, 28, 50, 250); }}
+
+#DevPanel {{
+    background-color: rgba(10, 25, 50, 230);
+    border-left: 1px solid {BORDER};
+}}
 """
 
 
 def avatar_color(user_id: str) -> str:
-    """Deterministic accent-ish color per user, for avatar circles."""
-    palette = [ACCENT, "#5865f2", "#3ba55d", "#f0b232", "#9b59b6", "#1abc9c", "#e67e22"]
+    palette = [ACCENT, "#4fc3ff", "#3dd68c", "#f0b232", "#9b59b6", "#1abc9c", "#e67e22"]
     return palette[sum(ord(c) for c in user_id) % len(palette)]
 
 
