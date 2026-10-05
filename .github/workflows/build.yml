@@ -68,6 +68,7 @@ jobs:
             main.py
 
       - name: Verify bundled natives
+        working-directory: client-desktop
         run: |
           Write-Host "--- sounddevice data ---"
           Get-ChildItem -Recurse dist/SEC/_internal/_sounddevice_data -ErrorAction SilentlyContinue
@@ -75,12 +76,13 @@ jobs:
           Get-ChildItem -Recurse dist/SEC/_internal/cv2 -Filter *.pyd -ErrorAction SilentlyContinue | Select-Object -First 5
 
       - name: Compress Build Artifact
+        working-directory: client-desktop
         run: |
           powershell Compress-Archive -Path dist/SEC/* -DestinationPath dist/SEC-Windows-x64.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/SEC-Windows-x64.zip
+          files: client-desktop/dist/SEC-Windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
