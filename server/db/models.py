@@ -2,11 +2,6 @@ from __future__ import annotations
 
 """
 server/db/models.py
-
-Thin DB access layer. Notice: every function signature here only ever
-accepts/returns PUBLIC keys, OPAQUE ciphertext strings, or social-graph
-metadata (contacts/groups/profile info). There's no private key anywhere
-in scope, and no plaintext message content.
 """
 
 import sqlite3
@@ -14,18 +9,23 @@ import time
 import uuid
 import secrets
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional
 from contextlib import contextmanager
 
 DB_PATH = Path(__file__).parent / "relay.db"
 SCHEMA_PATH = Path(__file__).parent / "schema.sql"
+DEV_PASSWORD_PATH = Path(__file__).parent / "dev_password.txt"
 
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     with open(SCHEMA_PATH) as f:
         conn.executescript(f.read())
-    conn.commit()
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN is_dev INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except Exception:
+        pass
     conn.close()
 
 
@@ -40,20 +40,75 @@ def get_conn():
         conn.close()
 
 
-# ---------- Users / profiles ----------
+def check_dev_password(password: str) -> bool:
+    if not DEV_PASSWORD_PATH.exists():
+        return False
+    stored = DEV_PASSWORD_PATH.read_text(encoding="utf-8").strip()
+    return bool(stored) and password == stored
+
+
+def set_user_dev(user_id: str, is_dev: bool = True):
+    with get_conn() as conn:
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN is_dev INTEGER NOT NULL DEFAULT 0")
+        except Exception:
+            pass
+        conn.execute("UPDATE users SET is_dev = ? WHERE id = ?", (1 if is_dev else 0, user_id))
+
+
+def is_user_dev(user_id: str) -> bool:
+    with get_conn() as conn:
+        try:
+            row = conn.execute("SELECT is_dev FROM users WHERE id = ?", (user_id,)).fetchone()
+            return bool(row and row["is_dev"])
+        except Exception:
+            return False
+
+
+def list_all_users(limit: int = 500) -> list[dict]:
+    with get_conn() as conn:
+        try:
+            rows = conn.execute(
+                "SELECT id, bio, avatar_id, is_anonymous, is_dev, last_seen, created_at "
+                "FROM users ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        except Exception:
+            rows = conn.execute(
+                "SELECT id, bio, avatar_id, is_anonymous, last_seen, created_at "
+                "FROM users ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            d.setdefault("is_dev", 0)
+            out.append(d)
+        return out
+
 
 def get_or_create_user(user_id: str, is_anonymous: bool = False) -> dict:
     with get_conn() as conn:
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         if row:
             return dict(row)
-        conn.execute(
-            "INSERT INTO users (id, bio, avatar_id, is_anonymous, last_seen, created_at) "
-            "VALUES (?, '', 'default', ?, ?, ?)",
-            (user_id, int(is_anonymous), time.time(), time.time()),
-        )
-        return {"id": user_id, "bio": "", "avatar_id": "default",
-                "is_anonymous": int(is_anonymous), "last_seen": time.time(), "created_at": time.time()}
+        try:
+            conn.execute(
+                "INSERT INTO users (id, bio, avatar_id, is_anonymous, is_dev, last_seen, created_at) "
+                "VALUES (?, '', 'default', ?, 0, ?, ?)",
+                (user_id, int(is_anonymous), time.time(), time.time()),
+            )
+        except Exception:
+            conn.execute(
+                "INSERT INTO users (id, bio, avatar_id, is_anonymous, last_seen, created_at) "
+                "VALUES (?, '', 'default', ?, ?, ?)",
+                (user_id, int(is_anonymous), time.time(), time.time()),
+            )
+        return {
+            "id": user_id, "bio": "", "avatar_id": "default",
+            "is_anonymous": int(is_anonymous), "is_dev": 0,
+            "last_seen": time.time(), "created_at": time.time(),
+        }
 
 
 def update_profile(user_id: str, bio: Optional[str] = None, avatar_id: Optional[str] = None):
@@ -85,8 +140,6 @@ def search_users(query: str, exclude_user_id: str, limit: int = 20) -> list[dict
         return [dict(r) for r in rows]
 
 
-# ---------- Contacts (friends) ----------
-
 def add_contact(owner_id: str, contact_id: str):
     with get_conn() as conn:
         conn.execute(
@@ -97,7 +150,10 @@ def add_contact(owner_id: str, contact_id: str):
 
 def remove_contact(owner_id: str, contact_id: str):
     with get_conn() as conn:
-        conn.execute("DELETE FROM contacts WHERE owner_id = ? AND contact_id = ?", (owner_id, contact_id))
+        conn.execute(
+            "DELETE FROM contacts WHERE owner_id = ? AND contact_id = ?",
+            (owner_id, contact_id),
+        )
 
 
 def list_contacts(owner_id: str) -> list[dict]:
@@ -111,25 +167,31 @@ def list_contacts(owner_id: str) -> list[dict]:
 
 
 def get_watchers(user_id: str) -> list[str]:
-    """Who has `user_id` added as a contact -- these are the people who
-    should be notified of this user's presence changes."""
     with get_conn() as conn:
-        rows = conn.execute("SELECT owner_id FROM contacts WHERE contact_id = ?", (user_id,)).fetchall()
+        rows = conn.execute(
+            "SELECT owner_id FROM contacts WHERE contact_id = ?", (user_id,)
+        ).fetchall()
         return [r["owner_id"] for r in rows]
 
 
-# ---------- Devices ----------
-
-def register_device(user_id: str, identity_pubkey: str, identity_ed25519_pubkey: str,
-                    signed_prekey: str, signed_prekey_sig: str, one_time_prekeys: list[str]) -> str:
+def register_device(
+    user_id: str,
+    identity_pubkey: str,
+    identity_ed25519_pubkey: str,
+    signed_prekey: str,
+    signed_prekey_sig: str,
+    one_time_prekeys: list[str],
+) -> str:
     get_or_create_user(user_id)
     device_id = str(uuid.uuid4())
     with get_conn() as conn:
         conn.execute(
             """INSERT INTO devices (id, user_id, identity_pubkey, identity_ed25519_pubkey,
                signed_prekey, signed_prekey_sig, registered_at) VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (device_id, user_id, identity_pubkey, identity_ed25519_pubkey,
-             signed_prekey, signed_prekey_sig, time.time()),
+            (
+                device_id, user_id, identity_pubkey, identity_ed25519_pubkey,
+                signed_prekey, signed_prekey_sig, time.time(),
+            ),
         )
         for pk in one_time_prekeys:
             conn.execute(
@@ -147,17 +209,14 @@ def get_prekey_bundle(user_id: str) -> Optional[dict]:
         ).fetchone()
         if not device:
             return None
-
         otk_row = conn.execute(
             "SELECT id, pubkey FROM one_time_prekeys WHERE device_id = ? AND used = 0 LIMIT 1",
             (device["id"],),
         ).fetchone()
-
         one_time_prekey, prekey_id = None, None
         if otk_row:
             one_time_prekey, prekey_id = otk_row["pubkey"], otk_row["id"]
             conn.execute("UPDATE one_time_prekeys SET used = 1 WHERE id = ?", (prekey_id,))
-
         return {
             "user_id": user_id,
             "device_id": device["id"],
@@ -169,8 +228,6 @@ def get_prekey_bundle(user_id: str) -> Optional[dict]:
             "prekey_id": prekey_id,
         }
 
-
-# ---------- Groups ----------
 
 def create_group(name: str, owner_id: str) -> dict:
     group_id = str(uuid.uuid4())
@@ -189,7 +246,9 @@ def create_group(name: str, owner_id: str) -> dict:
 
 def join_group_by_token(invite_token: str, user_id: str) -> Optional[dict]:
     with get_conn() as conn:
-        group = conn.execute("SELECT * FROM groups WHERE invite_token = ?", (invite_token,)).fetchone()
+        group = conn.execute(
+            "SELECT * FROM groups WHERE invite_token = ?", (invite_token,)
+        ).fetchone()
         if not group:
             return None
         conn.execute(
@@ -201,7 +260,9 @@ def join_group_by_token(invite_token: str, user_id: str) -> Optional[dict]:
 
 def list_group_members(group_id: str) -> list[str]:
     with get_conn() as conn:
-        rows = conn.execute("SELECT user_id FROM group_members WHERE group_id = ?", (group_id,)).fetchall()
+        rows = conn.execute(
+            "SELECT user_id FROM group_members WHERE group_id = ?", (group_id,)
+        ).fetchall()
         return [r["user_id"] for r in rows]
 
 
@@ -215,8 +276,6 @@ def list_user_groups(user_id: str) -> list[dict]:
         return [dict(r) for r in rows]
 
 
-# ---------- Message queue (dead-drop mailbox) ----------
-
 def enqueue_message(envelope: dict):
     with get_conn() as conn:
         conn.execute(
@@ -224,10 +283,12 @@ def enqueue_message(envelope: dict):
                (id, sender_id, recipient_id, sender_device_id, recipient_device_id,
                 ciphertext, header, is_prekey_message, group_id, created_at, delivered)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)""",
-            (envelope["envelope_id"], envelope["sender_id"], envelope["recipient_id"],
-             envelope["sender_device_id"], envelope["recipient_device_id"],
-             envelope["ciphertext"], envelope["header"],
-             int(envelope["is_prekey_message"]), envelope.get("group_id"), time.time()),
+            (
+                envelope["envelope_id"], envelope["sender_id"], envelope["recipient_id"],
+                envelope["sender_device_id"], envelope["recipient_device_id"],
+                envelope["ciphertext"], envelope["header"],
+                int(envelope["is_prekey_message"]), envelope.get("group_id"), time.time(),
+            ),
         )
 
 
@@ -240,13 +301,11 @@ def fetch_pending(recipient_id: str) -> list[dict]:
         envelopes = []
         for r in rows:
             d = dict(r)
-            d["envelope_id"] = d.pop("id")  # normalize to match the live-delivery envelope shape
+            d["envelope_id"] = d.pop("id")
             envelopes.append(d)
         return envelopes
 
 
 def ack_delivered(envelope_id: str):
-    """Recipient confirmed receipt -> purge ciphertext from disk.
-    Minimizes what's ever at rest on the relay."""
     with get_conn() as conn:
         conn.execute("DELETE FROM message_queue WHERE id = ?", (envelope_id,))
