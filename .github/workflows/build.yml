@@ -67,6 +67,7 @@ jobs:
             --hidden-import "sounddevice" `
             --hidden-import "_cffi_backend" `
             --hidden-import "cffi" `
+            --hidden-import "websockets" `
             main.py
 
       - name: Verify bundled natives
